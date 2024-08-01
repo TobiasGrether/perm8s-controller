@@ -1,0 +1,75 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: authentiksynchronisationsources.perm8s.tobiasgrether.com
+spec:
+  group: perm8s.tobiasgrether.com
+  names:
+    kind: AuthentikSynchronisationSource
+    listKind: AuthentikSynchronisationSourceList
+    plural: authentiksynchronisationsources
+    singular: authentiksynchronisationsource
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.URL
+      name: Root URL
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              groupMappings:
+                additionalProperties:
+                  type: string
+                description: GroupMappings should be a map authentikGroupID => Kubernetes
+                  Group Name
+                type: object
+              requiredGroups:
+                description: |-
+                  RequiredGroups is a list where a user only gets considered for this data source once they are a member of at least one of these groups
+                  Leaving this array empty will autopass all users
+                items:
+                  type: string
+                type: array
+              scheme:
+                type: string
+              secretName:
+                type: string
+              url:
+                type: string
+            required:
+            - groupMappings
+            - requiredGroups
+            - scheme
+            - secretName
+            - url
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources: {}

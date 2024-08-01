@@ -1,0 +1,31 @@
+kind: Group
+apiVersion: perm8s.tobiasgrether.com/v1alpha1
+metadata:
+  name: test-group
+spec:
+  displayName: test-group
+  description: "My little group for testing"
+  clusterGroup: false
+  permissions:
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "watch", "list"]
+    - apiGroups: [""]
+      resources: ["pods", "pods/log", "pods/eviction"]
+      verbs: ["list", "watch", "get", "delete"]
+  namespaces: ["test-namespace"]
+---
+kind: Group
+apiVersion: perm8s.tobiasgrether.com/v1alpha1
+metadata:
+  name: list-namespaces
+spec:
+  displayName: list-namespaces
+  description: "Allows a user to list system namespaces"
+  clusterGroup: true
+  permissions:
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["list", "get", "watch"]
+  namespaces: []
+ 

@@ -1,0 +1,11 @@
+kind: User
+apiVersion: perm8s.tobiasgrether.com/v1alpha1
+metadata:
+  name: test-user
+
+spec:
+  name: test-user
+  authenticationSource: local
+  serviceAccountName: test-user
+  groupMemberships: ["test-group", "list-namespaces"]
+
