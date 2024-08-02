@@ -18,8 +18,8 @@ limitations under the License.
 
 package v1alpha1
 
-type AuthentikSynchronisationSourceExpansion interface{}
-
 type GroupExpansion interface{}
+
+type SynchronisationSourceExpansion interface{}
 
 type UserExpansion interface{}

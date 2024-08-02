@@ -24,10 +24,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// AuthentikSynchronisationSources returns a AuthentikSynchronisationSourceInformer.
-	AuthentikSynchronisationSources() AuthentikSynchronisationSourceInformer
 	// Groups returns a GroupInformer.
 	Groups() GroupInformer
+	// SynchronisationSources returns a SynchronisationSourceInformer.
+	SynchronisationSources() SynchronisationSourceInformer
 	// Users returns a UserInformer.
 	Users() UserInformer
 }
@@ -43,14 +43,14 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// AuthentikSynchronisationSources returns a AuthentikSynchronisationSourceInformer.
-func (v *version) AuthentikSynchronisationSources() AuthentikSynchronisationSourceInformer {
-	return &authentikSynchronisationSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // Groups returns a GroupInformer.
 func (v *version) Groups() GroupInformer {
 	return &groupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// SynchronisationSources returns a SynchronisationSourceInformer.
+func (v *version) SynchronisationSources() SynchronisationSourceInformer {
+	return &synchronisationSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Users returns a UserInformer.

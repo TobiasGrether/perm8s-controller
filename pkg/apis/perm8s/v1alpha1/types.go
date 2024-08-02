@@ -5,6 +5,8 @@ import (
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type AuthenticationSource string
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:noStatus
@@ -31,16 +33,23 @@ type GroupSpec struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:noStatus
-// +kubeBuilder:scope=Cluster
-// +kubeBuilder:resource:scope=Cluster
-// +kubeBuilder:resource.scope=Cluster
-// +kubebuilder:printcolumn:JSONPath=".spec.URL",name=Root URL,type=string
-// +kubebuilder:field:scope=Cluster
-type AuthentikSynchronisationSource struct {
+// +kubebuilder:printcolumn:JSONPath=".spec.type",name=Source Type,type=string
+type SynchronisationSource struct {
     metav1.TypeMeta   `json:",inline"`
     metav1.ObjectMeta `json:"metadata,omitempty"`
 
-    Spec AuthentikSynchronisationSourceSpec `json:"spec"`
+    Spec SynchronisationSourceSpec `json:"spec"`
+}
+
+type SynchronisationSourceSpec struct {
+    // +kubebuilder:validation:Enum=authentik;ldap
+    Type      string                             `json:"type"`
+    // +kubebuilder:validation:Optional
+    Authentik *AuthentikSynchronisationSourceSpec `json:"authentik"`
+    // GroupMappings should be a map internal group identifier => Kubernetes Group Name
+    // This is useful when your IdP or SyncSource returns some kind of UUID for the groups,
+    // but you want human-readable named groups in the cluster
+    GroupMappings map[string]string `json:"groupMappings"`
 }
 
 type AuthentikSynchronisationSourceSpec struct {
@@ -50,19 +59,15 @@ type AuthentikSynchronisationSourceSpec struct {
     // RequiredGroups is a list where a user only gets considered for this data source once they are a member of at least one of these groups
     // Leaving this array empty will autopass all users
     RequiredGroups []string `json:"requiredGroups"`
-    // GroupMappings should be a map authentikGroupID => Kubernetes Group Name
-    GroupMappings map[string]string `json:"groupMappings"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type AuthentikSynchronisationSourceList struct {
+type SynchronisationSourceList struct {
     metav1.TypeMeta `json:",inline"`
     metav1.ListMeta `json:"metadata"`
 
-    Items []AuthentikSynchronisationSource `json:"items"`
+    Items []SynchronisationSource `json:"items"`
 }
-
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

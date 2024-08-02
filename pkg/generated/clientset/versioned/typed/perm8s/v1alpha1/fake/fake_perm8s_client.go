@@ -29,12 +29,12 @@ type FakePerm8sV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakePerm8sV1alpha1) AuthentikSynchronisationSources(namespace string) v1alpha1.AuthentikSynchronisationSourceInterface {
-	return &FakeAuthentikSynchronisationSources{c, namespace}
-}
-
 func (c *FakePerm8sV1alpha1) Groups(namespace string) v1alpha1.GroupInterface {
 	return &FakeGroups{c, namespace}
+}
+
+func (c *FakePerm8sV1alpha1) SynchronisationSources(namespace string) v1alpha1.SynchronisationSourceInterface {
+	return &FakeSynchronisationSources{c, namespace}
 }
 
 func (c *FakePerm8sV1alpha1) Users(namespace string) v1alpha1.UserInterface {

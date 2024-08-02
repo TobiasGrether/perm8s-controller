@@ -28,8 +28,8 @@ import (
 
 type Perm8sV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	AuthentikSynchronisationSourcesGetter
 	GroupsGetter
+	SynchronisationSourcesGetter
 	UsersGetter
 }
 
@@ -38,12 +38,12 @@ type Perm8sV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *Perm8sV1alpha1Client) AuthentikSynchronisationSources(namespace string) AuthentikSynchronisationSourceInterface {
-	return newAuthentikSynchronisationSources(c, namespace)
-}
-
 func (c *Perm8sV1alpha1Client) Groups(namespace string) GroupInterface {
 	return newGroups(c, namespace)
+}
+
+func (c *Perm8sV1alpha1Client) SynchronisationSources(namespace string) SynchronisationSourceInterface {
+	return newSynchronisationSources(c, namespace)
 }
 
 func (c *Perm8sV1alpha1Client) Users(namespace string) UserInterface {

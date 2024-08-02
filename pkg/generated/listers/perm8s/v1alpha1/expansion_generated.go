@@ -18,14 +18,6 @@ limitations under the License.
 
 package v1alpha1
 
-// AuthentikSynchronisationSourceListerExpansion allows custom methods to be added to
-// AuthentikSynchronisationSourceLister.
-type AuthentikSynchronisationSourceListerExpansion interface{}
-
-// AuthentikSynchronisationSourceNamespaceListerExpansion allows custom methods to be added to
-// AuthentikSynchronisationSourceNamespaceLister.
-type AuthentikSynchronisationSourceNamespaceListerExpansion interface{}
-
 // GroupListerExpansion allows custom methods to be added to
 // GroupLister.
 type GroupListerExpansion interface{}
@@ -33,6 +25,14 @@ type GroupListerExpansion interface{}
 // GroupNamespaceListerExpansion allows custom methods to be added to
 // GroupNamespaceLister.
 type GroupNamespaceListerExpansion interface{}
+
+// SynchronisationSourceListerExpansion allows custom methods to be added to
+// SynchronisationSourceLister.
+type SynchronisationSourceListerExpansion interface{}
+
+// SynchronisationSourceNamespaceListerExpansion allows custom methods to be added to
+// SynchronisationSourceNamespaceLister.
+type SynchronisationSourceNamespaceListerExpansion interface{}
 
 // UserListerExpansion allows custom methods to be added to
 // UserLister.

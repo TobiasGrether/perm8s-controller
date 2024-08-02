@@ -4,19 +4,19 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
-  name: authentiksynchronisationsources.perm8s.tobiasgrether.com
+  name: synchronisationsources.perm8s.tobiasgrether.com
 spec:
   group: perm8s.tobiasgrether.com
   names:
-    kind: AuthentikSynchronisationSource
-    listKind: AuthentikSynchronisationSourceList
-    plural: authentiksynchronisationsources
-    singular: authentiksynchronisationsource
+    kind: SynchronisationSource
+    listKind: SynchronisationSourceList
+    plural: synchronisationsources
+    singular: synchronisationsource
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.URL
-      name: Root URL
+    - jsonPath: .spec.type
+      name: Source Type
       type: string
     name: v1alpha1
     schema:
@@ -41,31 +41,43 @@ spec:
             type: object
           spec:
             properties:
+              authentik:
+                properties:
+                  requiredGroups:
+                    description: |-
+                      RequiredGroups is a list where a user only gets considered for this data source once they are a member of at least one of these groups
+                      Leaving this array empty will autopass all users
+                    items:
+                      type: string
+                    type: array
+                  scheme:
+                    type: string
+                  secretName:
+                    type: string
+                  url:
+                    type: string
+                required:
+                - requiredGroups
+                - scheme
+                - secretName
+                - url
+                type: object
               groupMappings:
                 additionalProperties:
                   type: string
-                description: GroupMappings should be a map authentikGroupID => Kubernetes
-                  Group Name
-                type: object
-              requiredGroups:
                 description: |-
-                  RequiredGroups is a list where a user only gets considered for this data source once they are a member of at least one of these groups
-                  Leaving this array empty will autopass all users
-                items:
-                  type: string
-                type: array
-              scheme:
-                type: string
-              secretName:
-                type: string
-              url:
+                  GroupMappings should be a map internal group identifier => Kubernetes Group Name
+                  This is useful when your IdP or SyncSource returns some kind of UUID for the groups,
+                  but you want human-readable named groups in the cluster
+                type: object
+              type:
+                enum:
+                - authentik
+                - ldap
                 type: string
             required:
             - groupMappings
-            - requiredGroups
-            - scheme
-            - secretName
-            - url
+            - type
             type: object
         required:
         - spec

@@ -1,12 +1,14 @@
-kind: AuthentikSynchronisationSource
+kind: SynchronisationSource
 apiVersion: perm8s.tobiasgrether.com/v1alpha1
 metadata:
-  name: staffid
+  name: test
 
 spec:
-  scheme: https
-  url: id.nethergames.org
-  secretName: authentik-token
-  requiredGroups: ["8c71f59c-0855-4ba8-8fa9-afcacadd5250"]
+  type: authentik
+  authentik:
+    scheme: https
+    url: id.nethergames.org
+    secretName: authentik-token
+    requiredGroups: ["8c71f59c-0855-4ba8-8fa9-afcacadd5250"]
   groupMappings:
     "8c71f59c-0855-4ba8-8fa9-afcacadd5250": "developer"

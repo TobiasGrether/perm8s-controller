@@ -23,17 +23,17 @@ import (
 
 type Controller struct {
     kubeclientset kubernetes.Interface
-    clientSet     clientset.Interface
-    apiCLient     *v1.CoreV1Client
-    userLister        listers.UserLister
+    clientSet  clientset.Interface
+    apiClient  *v1.CoreV1Client
+    userLister listers.UserLister
     groupLister listers.GroupLister
-    authentikLister listers.AuthentikSynchronisationSourceLister
+    syncSourceLister listers.SynchronisationSourceLister
     usersSynced   cache.InformerSynced
     groupsSynced cache.InformerSynced
-    authentikSourcesSynced cache.InformerSynced
+    syncSourcesSynced cache.InformerSynced
     userWorkqueue workqueue.RateLimitingInterface
-    groupWorkqueue workqueue.RateLimitingInterface
-    authentikWorkqueue workqueue.RateLimitingInterface
+    groupWorkqueue      workqueue.RateLimitingInterface
+    syncSourceWorkqueue workqueue.RateLimitingInterface
 
     recorder record.EventRecorder
 }
@@ -59,19 +59,19 @@ func NewController(
     )
 
     controller := &Controller{
-        kubeclientset: kubeclientset,
-        clientSet:     clientSet,
-        apiCLient:     apiClient,
-        userLister:        version.Users().Lister(),
-        groupLister: version.Groups().Lister(),
-        authentikLister : version.AuthentikSynchronisationSources().Lister(),
-        usersSynced:   version.Users().Informer().HasSynced,
-        groupsSynced: version.Groups().Informer().HasSynced,
-        authentikSourcesSynced: version.AuthentikSynchronisationSources().Informer().HasSynced,
-        userWorkqueue:     workqueue.NewRateLimitingQueue(ratelimiter),
-        groupWorkqueue: workqueue.NewRateLimitingQueue(ratelimiter),
-        authentikWorkqueue: workqueue.NewRateLimitingQueue(ratelimiter),
-        recorder:      recorder,
+        kubeclientset:       kubeclientset,
+        clientSet:           clientSet,
+        apiClient:           apiClient,
+        userLister:          version.Users().Lister(),
+        groupLister:         version.Groups().Lister(),
+        syncSourceLister :   version.SynchronisationSources().Lister(),
+        usersSynced:         version.Users().Informer().HasSynced,
+        groupsSynced:        version.Groups().Informer().HasSynced,
+        syncSourcesSynced:   version.SynchronisationSources().Informer().HasSynced,
+        userWorkqueue:       workqueue.NewRateLimitingQueue(ratelimiter),
+        groupWorkqueue:      workqueue.NewRateLimitingQueue(ratelimiter),
+        syncSourceWorkqueue: workqueue.NewRateLimitingQueue(ratelimiter),
+        recorder:            recorder,
     }
 
     logger.Info("Setting up event handlers")
@@ -90,10 +90,10 @@ func NewController(
         },
     })
     
-    version.AuthentikSynchronisationSources().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-        AddFunc: controller.enqueueAuthentik,
+    version.SynchronisationSources().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+        AddFunc: controller.enqueueSyncSource,
         UpdateFunc: func(old, new interface{}) {
-            controller.enqueueAuthentik(new)
+            controller.enqueueSyncSource(new)
         },
     })
 
@@ -123,7 +123,7 @@ func (c *Controller) Run(ctx context.Context, workers int) error {
     
     logger.Info("Starting authentik workers", "count", workers)
     for i := 0; i < workers; i++ {
-        go wait.UntilWithContext(ctx, c.runAuthentikWorker, time.Second)
+        go wait.UntilWithContext(ctx, c.runSyncSourceWorker, time.Second)
     }
 
     logger.Info("Started workers")

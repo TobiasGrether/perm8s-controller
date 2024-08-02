@@ -65,12 +65,12 @@ func (c *Controller) syncUserHandler(ctx context.Context, objectRef cache.Object
         return err
     }
 
-    serviceAccount, err := c.apiCLient.ServiceAccounts(user.Namespace).Get(ctx, user.Name, v3.GetOptions{})
+    serviceAccount, err := c.apiClient.ServiceAccounts(user.Namespace).Get(ctx, user.Name, v3.GetOptions{})
 
     if err != nil {
         if errors.IsNotFound(err) {
             logger.Info("Service account does not exist yet, creating new", "accountName", user.Name, "namespace", user.Namespace)
-            serviceAccount, err = c.apiCLient.ServiceAccounts(user.Namespace).Create(ctx, c.ServiceAccountFromUser(user), v3.CreateOptions{})
+            serviceAccount, err = c.apiClient.ServiceAccounts(user.Namespace).Create(ctx, c.ServiceAccountFromUser(user), v3.CreateOptions{})
 
             if err != nil {
                 logger.Error(err, "Error while creating serviceaccount", "user", user.Name)
@@ -83,13 +83,13 @@ func (c *Controller) syncUserHandler(ctx context.Context, objectRef cache.Object
         }
     }
 
-    _, err = c.apiCLient.Secrets(user.Namespace).Get(ctx, fmt.Sprintf("%v-usertoken", serviceAccount.Name), v3.GetOptions{})
+    _, err = c.apiClient.Secrets(user.Namespace).Get(ctx, fmt.Sprintf("%v-usertoken", serviceAccount.Name), v3.GetOptions{})
 
     if err != nil {
         if errors.IsNotFound(err) {
             logger.Info("No token secret exists for user, creating secret", "user", user.Name, "serviceAccount", serviceAccount.Name)
 
-            _, err = c.apiCLient.Secrets(serviceAccount.Namespace).Create(ctx, c.AuthenticationSecretFromServiceAccount(serviceAccount, user), v3.CreateOptions{})
+            _, err = c.apiClient.Secrets(serviceAccount.Namespace).Create(ctx, c.AuthenticationSecretFromServiceAccount(serviceAccount, user), v3.CreateOptions{})
 
             if err != nil {
                 logger.Error(err, "Error while creating authentication secret", "user", user.Name, "serviceAccount", serviceAccount.Name, "namespace", serviceAccount.Namespace)
