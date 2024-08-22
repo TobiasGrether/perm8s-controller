@@ -137,39 +137,35 @@ func (c *Controller) syncUserHandler(ctx context.Context, objectRef cache.Object
 					return err
 				}
 			}
+		} else {
+			for _, namespace := range group.Spec.Namespaces {
+				roleBinding, err := c.kubeclientset.RbacV1().RoleBindings(namespace).Get(ctx, fmt.Sprintf("%v-membership-%v", user.Name, group.Name), v3.GetOptions{})
+				if errors.IsNotFound(err) {
+					logger.Info("RoleBinding does not exist yet for user, creating", "user", user.Name, "namespace", namespace, "group", group.Name)
+					roleBinding, err = c.kubeclientset.RbacV1().RoleBindings(namespace).Create(ctx, c.RoleBindingForUserMembership(user, group, namespace), v3.CreateOptions{})
 
-		}
+					if err != nil {
+						logger.Error(err, "Error while creating RoleBinding for UserGroup sync", "user", user.Name, "group", group.Name, "namespace", namespace)
+						return err
+					}
 
-		// At this point, the ClusterRoleBinding is correctly in place. Now we need to look at the regular RoleBindings#
+					c.recorder.Event(user, v2.EventTypeNormal, SuccessSynced, "Created RoleBinding for user in namespace "+namespace)
 
-		for _, namespace := range group.Spec.Namespaces {
-			roleBinding, err := c.kubeclientset.RbacV1().RoleBindings(namespace).Get(ctx, fmt.Sprintf("%v-membership-%v", user.Name, group.Name), v3.GetOptions{})
-			if errors.IsNotFound(err) {
-				logger.Info("RoleBinding does not exist yet for user, creating", "user", user.Name, "namespace", namespace, "group", group.Name)
-				roleBinding, err = c.kubeclientset.RbacV1().RoleBindings(namespace).Create(ctx, c.RoleBindingForUserMembership(user, group, namespace), v3.CreateOptions{})
-
-				if err != nil {
-					logger.Error(err, "Error while creating RoleBinding for UserGroup sync", "user", user.Name, "group", group.Name, "namespace", namespace)
-					return err
 				}
 
-				c.recorder.Event(user, v2.EventTypeNormal, SuccessSynced, "Created RoleBinding for user in namespace "+namespace)
+				desiredRoleBinding := c.RoleBindingForUserMembership(user, group, namespace)
+				if !reflect.DeepEqual(roleBinding.Subjects, desiredRoleBinding.Subjects) || !reflect.DeepEqual(roleBinding.RoleRef, desiredRoleBinding.RoleRef) {
+					logger.Info("RoleBinding for UserGroup is out of sync, resyncing", "user", user.Name, "group", group.Name, "namespace", namespace)
 
-			}
+					_, err = c.kubeclientset.RbacV1().RoleBindings(namespace).Update(ctx, desiredRoleBinding, v3.UpdateOptions{})
 
-			desiredRoleBinding := c.RoleBindingForUserMembership(user, group, namespace)
-			if !reflect.DeepEqual(roleBinding.Subjects, desiredRoleBinding.Subjects) || !reflect.DeepEqual(roleBinding.RoleRef, desiredRoleBinding.RoleRef) {
-				logger.Info("RoleBinding for UserGroup is out of sync, resyncing", "user", user.Name, "group", group.Name, "namespace", namespace)
-
-				_, err = c.kubeclientset.RbacV1().RoleBindings(namespace).Update(ctx, desiredRoleBinding, v3.UpdateOptions{})
-
-				if err != nil {
-					logger.Error(err, "Error while updating RoleBinding for UserGroup sync", "user", user.Name, "group", group.Name, "namespace", namespace)
-					return err
+					if err != nil {
+						logger.Error(err, "Error while updating RoleBinding for UserGroup sync", "user", user.Name, "group", group.Name, "namespace", namespace)
+						return err
+					}
 				}
 			}
 		}
-
 	}
 
 	c.recorder.Event(user, v2.EventTypeNormal, SuccessSynced, MessageUserSynced)
