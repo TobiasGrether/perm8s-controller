@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog/v2"
 	v1alpha2 "perm8s/pkg/apis/perm8s/v1alpha1"
 	"reflect"
+	"slices"
 )
 
 func (c *Controller) enqueueUser(obj interface{}) {
@@ -150,7 +151,6 @@ func (c *Controller) syncUserHandler(ctx context.Context, objectRef cache.Object
 					}
 
 					c.recorder.Event(user, v2.EventTypeNormal, SuccessSynced, "Created RoleBinding for user in namespace "+namespace)
-
 				}
 
 				desiredRoleBinding := c.RoleBindingForUserMembership(user, group, namespace)
@@ -166,6 +166,56 @@ func (c *Controller) syncUserHandler(ctx context.Context, objectRef cache.Object
 				}
 			}
 		}
+	}
+
+	// We need to make sure that there are no dangling RoleBindings in any namespaces.
+	// They are dangling if either:
+	// The user is no longer part of the given group OR
+	// The group no longer targets the specific namespace (and is a non-cluster group)
+	// If they are, we need to remove them
+	roleBindings, err := c.kubeclientset.RbacV1().RoleBindings("").List(ctx, v3.ListOptions{
+		LabelSelector: fmt.Sprintf("perm8s.tobiasgrether.com/user=%v,perm8s.tobiasgrether.com/namespace=%v", user.Name, user.Namespace),
+	})
+
+	for _, roleBinding := range roleBindings.Items {
+		if groupName, ok := roleBinding.Labels["perm8s.tobiasgrether.com/group"]; ok {
+			if groupNamespace, ok := roleBinding.Labels["perm8s.tobiasgrether.com/namespace"]; ok {
+				group, err := c.groupLister.Groups(groupNamespace).Get(groupName)
+				if err != nil {
+					if errors.IsNotFound(err) {
+						logger.Info("RoleBinding exists for unknown role, deleting", "user", user.Name, "group", groupName, "namespace", roleBinding.Namespace)
+						err = c.kubeclientset.RbacV1().RoleBindings(roleBinding.Namespace).Delete(ctx, roleBinding.Name, v3.DeleteOptions{})
+
+						if err != nil {
+							logger.Error(err, "Failed to delete RoleBinding without associated Group", "user", user.Name, "group", groupName, "namespace", roleBinding.Namespace)
+						}
+					} else {
+						logger.Error(err, "Error while fetching group for RoleBinding validity check", "user", user.Name, "group", groupName, "namespace", roleBinding.Namespace, "roleBinding", roleBinding.Name)
+					}
+				}
+				if !group.Spec.ClusterGroup && !slices.Contains(group.Spec.Namespaces, roleBinding.Namespace) {
+					logger.Info("RoleBinding is associated with Namespace that is no longer associated with group, removing", "user", user.Name, "group", groupName, "namespace", roleBinding.Namespace, "roleBinding", roleBinding.Name)
+					err = c.kubeclientset.RbacV1().RoleBindings(roleBinding.Namespace).Delete(ctx, roleBinding.Name, v3.DeleteOptions{})
+
+					if err != nil {
+						logger.Error(err, "Failed to delete dangling RoleBinding (no associated group)", "user", user.Name, "group", groupName, "namespace", roleBinding.Namespace)
+					}
+
+					continue
+				}
+			}
+			if !slices.Contains(user.Spec.GroupMemberships, groupName) {
+				logger.Info("Removing dangling RoleBinding for user", "user", user.Name, "group", groupName, "namespace", roleBinding.Namespace)
+				err = c.kubeclientset.RbacV1().RoleBindings(roleBinding.Namespace).Delete(ctx, roleBinding.Name, v3.DeleteOptions{})
+
+				if err != nil {
+					logger.Error(err, "Failed to delete dangling RoleBinding (user no longer part of group)", "user", user.Name, "group", groupName, "namespace", roleBinding.Namespace)
+				}
+			}
+		} else {
+			logger.Info("Warn: No groupname known for rolebinding", "namespace", roleBinding.Namespace, "roleBinding", roleBinding.Name)
+		}
+
 	}
 
 	c.recorder.Event(user, v2.EventTypeNormal, SuccessSynced, MessageUserSynced)
@@ -193,6 +243,11 @@ func (c *Controller) ClusterRoleBindingForUserMembership(user *v1alpha2.User, gr
 			OwnerReferences: []v3.OwnerReference{
 				*v3.NewControllerRef(user, v1alpha2.SchemeGroupVersion.WithKind("User")),
 			},
+			Labels: map[string]string{
+				"perm8s.tobiasgrether.com/user":      user.Name,
+				"perm8s.tobiasgrether.com/namespace": user.Namespace,
+				"perm8s.tobiasgrether.com/group":     group.Name,
+			},
 		},
 		Subjects: []v1.Subject{
 			{
@@ -213,8 +268,10 @@ func (c *Controller) RoleBindingForUserMembership(user *v1alpha2.User, group *v1
 	return &v1.RoleBinding{
 		ObjectMeta: v3.ObjectMeta{
 			Name: fmt.Sprintf("%v-membership-%v", user.Name, group.Name),
-			OwnerReferences: []v3.OwnerReference{
-				*v3.NewControllerRef(user, v1alpha2.SchemeGroupVersion.WithKind("User")),
+			Labels: map[string]string{
+				"perm8s.tobiasgrether.com/user":      user.Name,
+				"perm8s.tobiasgrether.com/namespace": user.Namespace,
+				"perm8s.tobiasgrether.com/group":     group.Name,
 			},
 			Namespace: namespace,
 		},
