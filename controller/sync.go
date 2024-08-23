@@ -98,6 +98,10 @@ func (c *Controller) syncSyncHandler(ctx context.Context, objectRef cache.Object
 			}
 		}
 
+		if source.Spec.DefaultGroups != nil {
+			groups = append(groups, *source.Spec.DefaultGroups...)
+		}
+
 		desiredUser := c.GetUserFromSyncUser(identifier, user.Name, source.Namespace, groups, source)
 
 		currentUser, err := c.clientSet.Perm8sV1alpha1().Users(source.Namespace).Get(ctx, desiredUser.Name, v3.GetOptions{})

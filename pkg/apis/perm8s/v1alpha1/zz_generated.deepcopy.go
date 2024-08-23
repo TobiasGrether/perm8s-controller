@@ -210,6 +210,15 @@ func (in *SynchronisationSourceSpec) DeepCopyInto(out *SynchronisationSourceSpec
 			(*out)[key] = val
 		}
 	}
+	if in.DefaultGroups != nil {
+		in, out := &in.DefaultGroups, &out.DefaultGroups
+		*out = new([]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
+	}
 	return
 }
 

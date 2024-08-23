@@ -62,6 +62,10 @@ spec:
                 - secretName
                 - url
                 type: object
+              defaultGroups:
+                items:
+                  type: string
+                type: array
               groupMappings:
                 additionalProperties:
                   type: string
